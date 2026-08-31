@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #0d0f0e;
+  color: #f2f4ec;
+}
+
+body {
+  font-family: "Gilroy", "Sora", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-image: radial-gradient(circle at 1px 1px, rgba(242, 244, 236, 0.035) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+/* Reserved for numeric/code-like accents (room codes, dice, ping) — a deliberate small
+   nod to the game's arcade roots without making the whole UI feel like a terminal. */
+.font-game-mono {
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  scrollbar-color: #1d221f #0d0f0e;
+}
+
+::selection {
+  background: #b8f34a;
+  color: #0d0f0e;
+}
+
+:focus-visible {
+  outline: 2px solid #b8f34a;
+  outline-offset: 2px;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes diceRoll {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-dice-roll {
+  animation: diceRoll 480ms ease-out;
+}
+
+@keyframes pieceMove {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-piece-move {
+  animation: pieceMove 260ms ease-out;
+}
+
+@keyframes toastIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toastIn 180ms ease-out;
+}
