@@ -11,7 +11,7 @@ const LINKS = [
   { href: "/leaderboard", label: "LEADERBOARD" },
 ];
 
-export function Navbar({ username }: { username?: string | null }) {
+export function Navbar({ username, isAdmin }: { username?: string | null; isAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -42,14 +42,34 @@ export function Navbar({ username }: { username?: string | null }) {
 
         <div className="hidden items-center gap-2 sm:flex">
           {username ? (
-            <Link
-              href="/profile"
-              className="rounded-full border border-secondary/60 px-3.5 py-1.5 text-xs font-medium text-secondary hover:bg-secondary/10 transition"
-            >
-              {username.toUpperCase()}
-            </Link>
+            <>
+              <Link
+                href="/profile"
+                className="rounded-full border border-secondary/60 px-3.5 py-1.5 text-xs font-medium text-secondary hover:bg-secondary/10 transition"
+              >
+                {username.toUpperCase()}
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="rounded-full border border-accent/60 px-3.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition"
+                >
+                  🛠 ADMIN
+                </Link>
+              )}
+              <Link
+                href="/settings"
+                aria-label="Settings"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:text-ink hover:bg-surface2 transition"
+              >
+                ⚙️
+              </Link>
+            </>
           ) : (
             <>
+              <Link href="/settings" className="rounded-full px-3.5 py-1.5 text-xs font-medium text-muted hover:text-ink transition">
+                ⚙️
+              </Link>
               <Link href="/login" className="rounded-full px-3.5 py-1.5 text-xs font-medium text-muted hover:text-ink transition">
                 LOG IN
               </Link>
@@ -88,32 +108,59 @@ export function Navbar({ username }: { username?: string | null }) {
                 {link.label}
               </Link>
             ))}
-            <div className="mt-1 border-t border-surface2 pt-2">
+            <div className="mt-1 border-t border-surface2 pt-2 space-y-1">
               {username ? (
-                <Link
-                  href="/profile"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-secondary hover:bg-surface2"
-                >
-                  {username.toUpperCase()} · PROFILE
-                </Link>
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-secondary hover:bg-surface2"
+                  >
+                    {username.toUpperCase()} · PROFILE
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm font-medium text-accent hover:bg-surface2"
+                    >
+                      🛠 ADMIN
+                    </Link>
+                  )}
+                  <Link
+                    href="/settings"
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted hover:bg-surface2 hover:text-ink"
+                  >
+                    ⚙️ SETTINGS
+                  </Link>
+                </>
               ) : (
-                <div className="flex gap-2">
+                <>
+                  <div className="flex gap-2">
+                    <Link
+                      href="/login"
+                      onClick={() => setOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2.5 text-center text-sm font-medium text-muted hover:bg-surface2"
+                    >
+                      LOG IN
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setOpen(false)}
+                      className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-center text-sm font-semibold text-background"
+                    >
+                      SIGN UP
+                    </Link>
+                  </div>
                   <Link
-                    href="/login"
+                    href="/settings"
                     onClick={() => setOpen(false)}
-                    className="flex-1 rounded-lg px-3 py-2.5 text-center text-sm font-medium text-muted hover:bg-surface2"
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted hover:bg-surface2 hover:text-ink"
                   >
-                    LOG IN
+                    ⚙️ SETTINGS
                   </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setOpen(false)}
-                    className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-center text-sm font-semibold text-background"
-                  >
-                    SIGN UP
-                  </Link>
-                </div>
+                </>
               )}
             </div>
           </div>

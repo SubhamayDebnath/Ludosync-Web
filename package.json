@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "framer-motion": "^13.2.0",
     "jose": "^5.9.6",
     "mongodb": "^6.11.0",
     "nanoid": "^5.0.9",

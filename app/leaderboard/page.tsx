@@ -2,15 +2,16 @@ import { getDb } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Avatar } from "@/components/Avatar";
+import { LeaderboardTable, type LeaderboardRow } from "@/components/LeaderboardTable";
 
 export const dynamic = "force-dynamic";
 
-const MIN_GAMES_THRESHOLD = 3;
+// A registered player appears on the leaderboard as soon as they've finished a single game.
+const MIN_GAMES_THRESHOLD = 1;
 
 export default async function LeaderboardPage() {
   const session = await getSession();
-  let leaderboard: { userId: string; username: string; games: number; wins: number; winRate: number }[] = [];
+  let leaderboard: LeaderboardRow[] = [];
   let dbError = false;
 
   try {
@@ -43,8 +44,8 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar username={session?.username ?? null} />
-      <main className="flex-1 px-4 py-10">
+      <Navbar username={session?.username ?? null} isAdmin={session?.isAdmin} />
+      <main className="flex-1 px-4 py-10 bg-glow-playful">
         <div className="max-w-4xl w-full mx-auto space-y-6">
           <h1 className="text-lg tracking-widest text-muted text-center">🏆 LEADERBOARD</h1>
 
@@ -52,37 +53,10 @@ export default async function LeaderboardPage() {
             <p className="text-center text-sm text-danger">Leaderboard is temporarily unavailable.</p>
           ) : leaderboard.length === 0 ? (
             <p className="text-center text-sm text-muted">
-              No ranked players yet — win a few games to appear here.
+              No ranked players yet — finish a game to be the first to appear here.
             </p>
           ) : (
-            <div className="max-w-xl mx-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-muted text-xs border-b border-surface2">
-                    <th className="text-left py-2 font-normal">PLAYER</th>
-                    <th className="text-right py-2 font-normal">GAMES</th>
-                    <th className="text-right py-2 font-normal">WINS</th>
-                    <th className="text-right py-2 font-normal">WIN RATE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((row, i) => (
-                    <tr key={row.username} className="border-b border-surface2/60">
-                      <td className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted w-4">{i + 1}.</span>
-                          <Avatar seed={row.userId} size="sm" />
-                          {row.username}
-                        </div>
-                      </td>
-                      <td className="text-right py-2.5 text-muted">{row.games}</td>
-                      <td className="text-right py-2.5 text-primary">{row.wins}</td>
-                      <td className="text-right py-2.5 text-accent">{row.winRate}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <LeaderboardTable rows={leaderboard} />
           )}
         </div>
       </main>

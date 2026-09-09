@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { EngineSocket, type EngineMessage } from "@/lib/engineSocket";
 import { getEngineWsUrl } from "@/lib/env";
@@ -17,6 +18,7 @@ import type { GameState, LobbyState } from "@/lib/gameTypes";
 import { legalPieceIdsForUi } from "@/lib/clientRules";
 import { Board } from "@/components/Board";
 import { Dice } from "@/components/Dice";
+import { Confetti } from "@/components/Confetti";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ConnectionDot, connStateFor } from "@/components/ConnectionDot";
 import { ChatPanel, type ChatMsg } from "@/components/ChatPanel";
@@ -56,6 +58,8 @@ export function RoomClient({ code, userId, defaultName }: { code: string; userId
   const [copied, setCopied] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [finishReason, setFinishReason] = useState<string | null>(null);
+  const [expiredReason, setExpiredReason] = useState<string | null>(null);
 
   const socketRef = useRef<EngineSocket | null>(null);
   const lobbyReceiptRef = useRef<{ serverNow: number; local: number } | null>(null);
@@ -188,12 +192,24 @@ export function RoomClient({ code, userId, defaultName }: { code: string; userId
       }
       case "game:finished": {
         setWinnerId(msg.winnerId as string);
+        setFinishReason((msg.reason as string) ?? null);
         setPhase("finished");
         sounds.win();
         break;
       }
       case "room:expired": {
+        setExpiredReason((msg.reason as string) ?? null);
         setPhase("expired");
+        break;
+      }
+      case "player:disconnected": {
+        const p = game?.players.find((pl) => pl.id === msg.playerId);
+        pushToast(`${p?.name ?? "A player"} disconnected — waiting for them to reconnect…`, "danger");
+        break;
+      }
+      case "player:reconnected": {
+        const p = game?.players.find((pl) => pl.id === msg.playerId);
+        pushToast(`${p?.name ?? "A player"} reconnected — game resumed`, "muted");
         break;
       }
       case "error": {
@@ -384,7 +400,13 @@ export function RoomClient({ code, userId, defaultName }: { code: string; userId
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="max-w-md w-full mx-auto text-center space-y-4">
             <h1 className="text-lg tracking-widest text-danger">ROOM EXPIRED</h1>
-            <p className="text-sm text-muted">Not enough players joined before the countdown ended.</p>
+            <p className="text-sm text-muted">
+              {expiredReason === "idle_timeout"
+                ? "The host didn't start the match in time, so the room was closed."
+                : expiredReason === "all_players_left"
+                  ? "Everyone left the match."
+                  : "Not enough players joined before the room closed."}
+            </p>
             <Link href="/create" className="text-primary underline text-sm">
               Create a new room
             </Link>
@@ -415,14 +437,14 @@ export function RoomClient({ code, userId, defaultName }: { code: string; userId
               </button>
             </div>
 
-            {lobby.lobbyEndAt && lobbyReceiptRef.current && (
+            {lobby.autoCloseAt && lobbyReceiptRef.current && (
               <div className="text-center">
-                <p className="text-xs text-muted">STARTING IN</p>
+                <p className="text-[10px] text-muted/70">ROOM AUTO-CLOSES IN (if not started)</p>
                 <CountdownTimer
-                  endAt={lobby.lobbyEndAt}
+                  endAt={lobby.autoCloseAt}
                   serverNowAtReceipt={lobbyReceiptRef.current.serverNow}
                   receivedAtLocal={lobbyReceiptRef.current.local}
-                  className="text-4xl font-bold text-primary"
+                  className="text-lg font-semibold text-muted"
                 />
               </div>
             )}
@@ -459,13 +481,24 @@ export function RoomClient({ code, userId, defaultName }: { code: string; userId
             </p>
 
             {isHost && (
-              <button
+              <motion.button
                 onClick={startNow}
                 disabled={!canStartNow}
-                className="w-full px-6 py-3 rounded-full bg-primary text-background font-semibold hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                whileHover={canStartNow ? { scale: 1.03 } : undefined}
+                whileTap={canStartNow ? { scale: 0.96 } : undefined}
+                animate={
+                  canStartNow
+                    ? { boxShadow: ["0 0 0px rgba(184,243,74,0.0)", "0 0 26px rgba(184,243,74,0.65)", "0 0 0px rgba(184,243,74,0.0)"] }
+                    : { boxShadow: "0 0 0px rgba(184,243,74,0)" }
+                }
+                transition={canStartNow ? { duration: 1.8, repeat: Infinity } : { duration: 0.2 }}
+                className="w-full px-6 py-3 rounded-full bg-primary text-background font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {canStartNow ? "START NOW" : "NEED 2+ PLAYERS TO START"}
-              </button>
+                {canStartNow ? "▶ START NOW" : "NEED 2+ PLAYERS TO START"}
+              </motion.button>
+            )}
+            {!isHost && (
+              <p className="text-center text-xs text-muted">Waiting for the host to start the match…</p>
             )}
 
             <button onClick={exitGame} className="w-full text-center text-xs text-muted hover:text-danger transition">
@@ -511,12 +544,23 @@ export function RoomClient({ code, userId, defaultName }: { code: string; userId
           </header>
 
           {phase === "finished" && winner && (
-            <div className="rounded-lg border border-primary bg-surface p-4 text-center space-y-1">
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="relative overflow-hidden rounded-lg border border-primary bg-surface p-4 text-center space-y-1"
+            >
+              {winner.id === selfId && <Confetti />}
               <p className="text-xs text-muted">GAME OVER</p>
               <p className="text-xl font-bold text-primary">
                 {winner.id === selfId ? "YOU WON! 🎉" : `${winner.name} wins`}
               </p>
-            </div>
+              {finishReason === "opponent_left" && (
+                <p className="text-xs text-muted">
+                  {winner.id === selfId ? "Your opponent didn't reconnect in time." : "You didn't reconnect in time."}
+                </p>
+              )}
+            </motion.div>
           )}
 
           <div className="flex flex-col lg:flex-row gap-4 flex-1">

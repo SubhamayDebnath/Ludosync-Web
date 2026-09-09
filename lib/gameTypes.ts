@@ -11,10 +11,18 @@ export const SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
 export const FINISH_STEP = 58;
 
 export const COLOR_HEX: Record<Color, string> = {
-  red: "#FF6B6B",
-  green: "#B8F34A",
-  yellow: "#FFB454",
-  blue: "#7FB8FF",
+  red: "#FF4D5E",
+  green: "#22C55E",
+  yellow: "#FFD53E",
+  blue: "#3FA9F5",
+};
+
+/** Deeper shade of each color, used for strokes/gradients so pieces read as glossy, not flat. */
+export const COLOR_HEX_DARK: Record<Color, string> = {
+  red: "#B8222F",
+  green: "#0F7A3B",
+  yellow: "#D69C00",
+  blue: "#1667B5",
 };
 
 export interface Piece {
@@ -32,6 +40,8 @@ export interface PlayerState {
   connected: boolean;
   pieces: Piece[];
   finished: boolean;
+  /** True once this seat has been permanently removed (quit, or never reconnected in time). */
+  left: boolean;
 }
 
 export type RoomStatus = "CREATING" | "READY" | "LOBBY" | "STARTING" | "PLAYING" | "FINISHED" | "EXPIRED";
@@ -45,6 +55,8 @@ export interface GameState {
   consecutiveSixes: number;
   winnerId: string | null;
   version: number;
+  /** Non-null while paused waiting for a disconnected player to reconnect — nobody can roll. */
+  waitingForPlayerId: string | null;
 }
 
 export interface LobbyPlayer {
@@ -60,7 +72,8 @@ export interface LobbyState {
   status: RoomStatus;
   maxPlayers: number;
   lobbyStartAt: number | null;
-  lobbyEndAt: number | null;
+  /** When an un-started room auto-closes if the host hasn't hit Start by then. */
+  autoCloseAt: number | null;
   serverTime: number;
   players: LobbyPlayer[];
 }

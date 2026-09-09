@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { AuthCard } from "@/components/AuthCard";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -40,8 +41,9 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <form onSubmit={submit} className="max-w-md w-full mx-auto space-y-5">
+      <main className="flex-1 flex items-center justify-center px-4 py-10 bg-glow-playful">
+        <AuthCard emoji="📝">
+        <form onSubmit={submit} className="space-y-5">
           <h1 className="text-lg tracking-widest text-muted text-center">REGISTER</h1>
 
           <Field label="USERNAME" value={username} onChange={setUsername} autoFocus />
@@ -69,6 +71,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </form>
+        </AuthCard>
       </main>
       <Footer />
     </div>

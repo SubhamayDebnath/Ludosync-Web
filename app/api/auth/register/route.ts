@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
-import { hashSecret, createSessionToken, SESSION_COOKIE_NAME, SESSION_MAX_AGE } from "@/lib/auth";
+import { hashSecret, createSessionToken, isBootstrapAdminUsername, SESSION_COOKIE_NAME, SESSION_MAX_AGE } from "@/lib/auth";
 import { registerSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
   ]);
 
   const now = new Date();
+  const isAdmin = isBootstrapAdminUsername(username);
   const result = await users.insertOne({
     username,
     usernameLower: username.toLowerCase(),
@@ -40,10 +41,11 @@ export async function POST(req: NextRequest) {
     emailLower: email.toLowerCase(),
     passwordHash,
     recoveryCodeHash,
+    isAdmin,
     createdAt: now,
   });
 
-  const token = await createSessionToken({ userId: result.insertedId.toString(), username });
+  const token = await createSessionToken({ userId: result.insertedId.toString(), username, isAdmin });
   const res = NextResponse.json({ ok: true, username });
   res.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,

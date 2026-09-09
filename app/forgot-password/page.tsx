@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { AuthCard } from "@/components/AuthCard";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -41,11 +42,13 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="max-w-md w-full mx-auto text-center space-y-3">
+        <main className="flex-1 flex items-center justify-center px-4 bg-glow-playful">
+          <AuthCard emoji="✅">
+          <div className="text-center space-y-3">
             <h1 className="text-lg text-primary">Password updated ✓</h1>
             <p className="text-sm text-muted">Redirecting to log in…</p>
           </div>
+          </AuthCard>
         </main>
         <Footer />
       </div>
@@ -55,8 +58,9 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center px-4">
-        <form onSubmit={submit} className="max-w-md w-full mx-auto space-y-5">
+      <main className="flex-1 flex items-center justify-center px-4 bg-glow-playful">
+        <AuthCard emoji="🔐">
+        <form onSubmit={submit} className="space-y-5">
           <h1 className="text-lg tracking-widest text-muted text-center">RESET PASSWORD</h1>
 
           <div className="space-y-1.5">
@@ -105,6 +109,7 @@ export default function ForgotPasswordPage() {
             </Link>
           </p>
         </form>
+        </AuthCard>
       </main>
       <Footer />
     </div>

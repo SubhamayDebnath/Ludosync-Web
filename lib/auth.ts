@@ -21,6 +21,7 @@ export async function verifySecret(plain: string, hash: string): Promise<boolean
 export interface SessionPayload {
   userId: string;
   username: string;
+  isAdmin: boolean;
 }
 
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
@@ -35,7 +36,7 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
   try {
     const { payload } = await jwtVerify(token, getSecret());
     if (typeof payload.userId !== "string" || typeof payload.username !== "string") return null;
-    return { userId: payload.userId, username: payload.username };
+    return { userId: payload.userId, username: payload.username, isAdmin: payload.isAdmin === true };
   } catch {
     return null;
   }
@@ -43,3 +44,19 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 
 export const SESSION_COOKIE_NAME = SESSION_COOKIE;
 export const SESSION_MAX_AGE = SESSION_TTL_SECONDS;
+
+/**
+ * Bootstraps admin access from an env var (comma-separated usernames) so a fresh
+ * deployment can have an admin without a manual DB edit. Once a matching user logs in,
+ * `isAdmin` is persisted on their user document — the env var is only a bootstrap trigger,
+ * not something checked on every request.
+ */
+export function isBootstrapAdminUsername(username: string): boolean {
+  const list = process.env.ADMIN_USERNAMES;
+  if (!list) return false;
+  return list
+    .split(",")
+    .map((u) => u.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(username.toLowerCase());
+}

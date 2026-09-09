@@ -32,7 +32,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar username={user.username} />
+      <Navbar username={user.username} isAdmin={session.isAdmin} />
       <main className="flex-1 px-4 py-10">
         <div className="max-w-4xl w-full mx-auto space-y-8">
           <h1 className="text-lg tracking-widest text-muted text-center">PROFILE</h1>
@@ -76,7 +76,13 @@ export default async function ProfilePage() {
             )}
           </div>
 
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center gap-3 pt-4">
+            <a
+              href="/settings"
+              className="px-6 py-2.5 rounded-md border border-surface2 text-ink text-sm font-semibold hover:bg-surface2 transition"
+            >
+              ⚙️ SETTINGS
+            </a>
             <LogoutButton />
           </div>
         </div>

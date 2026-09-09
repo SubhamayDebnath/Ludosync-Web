@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { EngineSocket, type EngineMessage } from "@/lib/engineSocket";
 import { getEngineWsUrl } from "@/lib/env";
 import { savePlayerToken, saveDisplayName } from "@/lib/clientStorage";
+import { randomGuestName } from "@/lib/randomName";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Avatar } from "@/components/Avatar";
@@ -14,7 +15,7 @@ type Stage = "form" | "connecting" | "ready-error";
 export function CreateRoomClient({ userId, defaultName }: { userId: string | null; defaultName: string }) {
   const router = useRouter();
   const [maxPlayers, setMaxPlayers] = useState<2 | 3 | 4>(4);
-  const [name, setName] = useState(defaultName);
+  const [name, setName] = useState(() => defaultName || randomGuestName());
   const [stage, setStage] = useState<Stage>("form");
   const [slow, setSlow] = useState(false);
   const socketRef = useRef<EngineSocket | null>(null);
@@ -143,7 +144,8 @@ export function CreateRoomClient({ userId, defaultName }: { userId: string | nul
               ))}
             </div>
             <p className="text-center text-[11px] text-muted">
-              Lobby starts a 30s countdown once created — or start early once 2+ players join.
+              You control when it starts — hit &ldquo;Start Now&rdquo; once 2+ players have joined. Idle
+              rooms auto-close after 10 minutes.
             </p>
           </div>
 

@@ -1,10 +1,12 @@
 "use client";
 
-import { COLOR_HEX, SAFE_SQUARES, type Color, type PlayerState } from "@/lib/gameTypes";
+import { motion } from "framer-motion";
+import { COLOR_HEX, COLOR_HEX_DARK, SAFE_SQUARES, type Color, type PlayerState } from "@/lib/gameTypes";
 import { COMMON_PATH, HOME_COLUMNS, HOME_QUADRANT, YARD_SLOTS, cellForSteps } from "./boardGeometry";
 
 const CELL = 40;
 const SIZE = CELL * 15;
+const COLORS: Color[] = ["red", "green", "yellow", "blue"];
 
 function toXY([row, col]: [number, number]) {
   return { x: col * CELL + CELL / 2, y: row * CELL + CELL / 2 };
@@ -15,7 +17,7 @@ interface Props {
   currentColor: Color | null;
   selectablePieceIds: Set<string>;
   onSelectPiece: (pieceId: string) => void;
-  lastMoveInfo?: { pieceId: string } | null;
+  lastMoveInfo?: { pieceId: string; captured?: unknown[] } | null;
 }
 
 export function Board({ players, currentColor, selectablePieceIds, onSelectPiece, lastMoveInfo }: Props) {
@@ -35,14 +37,28 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
 
   const CLUSTER_OFFSETS: [number, number][] = [
     [0, 0],
-    [-8, -8],
-    [8, -8],
-    [-8, 8],
-    [8, 8],
+    [-7, -7],
+    [7, -7],
+    [-7, 7],
+    [7, 7],
   ];
 
   return (
     <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto select-none" role="img" aria-label="Ludo board">
+      <defs>
+        {COLORS.map((color) => (
+          <radialGradient key={color} id={`piece-${color}`} cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.85} />
+            <stop offset="35%" stopColor={COLOR_HEX[color]} />
+            <stop offset="100%" stopColor={COLOR_HEX_DARK[color]} />
+          </radialGradient>
+        ))}
+        <radialGradient id="center-glow" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#F2F4EC" stopOpacity={0.9} />
+          <stop offset="100%" stopColor="#F2F4EC" stopOpacity={0} />
+        </radialGradient>
+      </defs>
+
       <rect x={0} y={0} width={SIZE} height={SIZE} fill="#12151300" rx={8} />
 
       {/* Home yard quadrants */}
@@ -56,11 +72,11 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
               width={w * CELL}
               height={h * CELL}
               fill={COLOR_HEX[color]}
-              opacity={0.1}
+              opacity={0.16}
               stroke={COLOR_HEX[color]}
-              strokeOpacity={0.55}
-              strokeWidth={1.5}
-              rx={4}
+              strokeOpacity={0.7}
+              strokeWidth={2}
+              rx={6}
             />
             <rect
               x={(c + 1) * CELL}
@@ -69,9 +85,14 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
               height={(h - 2) * CELL}
               fill="#1D221F"
               stroke={COLOR_HEX[color]}
-              strokeWidth={2}
-              rx={10}
+              strokeWidth={2.5}
+              rx={12}
             />
+            {/* 4 subtle yard-slot wells so waiting pieces look "docked" rather than floating */}
+            {YARD_SLOTS[color].map(([row, col], i) => {
+              const { x, y } = toXY([row, col]);
+              return <circle key={i} cx={x} cy={y} r={13} fill={COLOR_HEX[color]} opacity={0.14} />;
+            })}
           </g>
         );
       })}
@@ -86,7 +107,7 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
             y={row * CELL}
             width={CELL}
             height={CELL}
-            fill={isSafe ? "#1D221F" : "#171B18"}
+            fill={isSafe ? "#232A24" : idx % 2 === 0 ? "#1B211D" : "#181D19"}
             stroke="#33392f"
             strokeWidth={1}
           />
@@ -94,46 +115,81 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
       })}
       {COMMON_PATH.map(([row, col], idx) =>
         SAFE_SQUARES.includes(idx) ? (
-          <text
-            key={`star-${idx}`}
-            x={col * CELL + CELL / 2}
-            y={row * CELL + CELL / 2 + 5}
-            textAnchor="middle"
-            fontSize={16}
-            fill="#B8F34A"
-            opacity={0.65}
-          >
-            ★
-          </text>
+          <g key={`star-${idx}`}>
+            <circle cx={col * CELL + CELL / 2} cy={row * CELL + CELL / 2} r={15} fill="#B8F34A" opacity={0.12} />
+            <text
+              x={col * CELL + CELL / 2}
+              y={row * CELL + CELL / 2 + 6}
+              textAnchor="middle"
+              fontSize={17}
+              fill="#B8F34A"
+              opacity={0.85}
+            >
+              ★
+            </text>
+          </g>
         ) : null,
       )}
 
       {/* Home columns — each color's private lane into the center */}
       {(Object.keys(HOME_COLUMNS) as Color[]).map((color) =>
-        HOME_COLUMNS[color].map(([row, col], i) => (
-          <rect
-            key={`${color}-home-${i}`}
-            x={col * CELL + 1}
-            y={row * CELL + 1}
-            width={CELL - 2}
-            height={CELL - 2}
-            fill={COLOR_HEX[color]}
-            opacity={0.32}
-            stroke={COLOR_HEX[color]}
-            strokeOpacity={0.5}
-            strokeWidth={1}
-            rx={3}
-          />
-        )),
+        HOME_COLUMNS[color].map(([row, col], i) => {
+          const isFinalCell = i === HOME_COLUMNS[color].length - 1;
+          return (
+            <g key={`${color}-home-${i}`}>
+              <rect
+                x={col * CELL + 1}
+                y={row * CELL + 1}
+                width={CELL - 2}
+                height={CELL - 2}
+                fill={COLOR_HEX[color]}
+                opacity={isFinalCell ? 0.5 : 0.3}
+                stroke={COLOR_HEX[color]}
+                strokeOpacity={0.7}
+                strokeWidth={isFinalCell ? 2 : 1}
+                rx={4}
+              />
+              {isFinalCell && (
+                <text
+                  x={col * CELL + CELL / 2}
+                  y={row * CELL + CELL / 2 + 5}
+                  textAnchor="middle"
+                  fontSize={14}
+                  fill="#0D0F0E"
+                  opacity={0.5}
+                >
+                  🏠
+                </text>
+              )}
+            </g>
+          );
+        }),
       )}
 
-      {/* Center finish pinwheel */}
+      {/* Center finish rosette — four glossy triangles meeting at a raised hub, not a flat cross */}
       <g>
-        <polygon points={`${7*CELL},${7*CELL} ${8*CELL},${7*CELL} ${7.5*CELL},${7.5*CELL}`} fill={COLOR_HEX.green} opacity={0.85} />
-        <polygon points={`${8*CELL},${7*CELL} ${8*CELL},${8*CELL} ${7.5*CELL},${7.5*CELL}`} fill={COLOR_HEX.yellow} opacity={0.85} />
-        <polygon points={`${8*CELL},${8*CELL} ${7*CELL},${8*CELL} ${7.5*CELL},${7.5*CELL}`} fill={COLOR_HEX.blue} opacity={0.85} />
-        <polygon points={`${7*CELL},${8*CELL} ${7*CELL},${7*CELL} ${7.5*CELL},${7.5*CELL}`} fill={COLOR_HEX.red} opacity={0.85} />
-        <rect x={7*CELL} y={7*CELL} width={CELL} height={CELL} fill="none" stroke="#0D0F0E" strokeWidth={1.5} />
+        <polygon
+          points={`${7 * CELL},${7 * CELL} ${8 * CELL},${7 * CELL} ${7.5 * CELL},${7.5 * CELL}`}
+          fill={COLOR_HEX.green}
+        />
+        <polygon
+          points={`${8 * CELL},${7 * CELL} ${8 * CELL},${8 * CELL} ${7.5 * CELL},${7.5 * CELL}`}
+          fill={COLOR_HEX.yellow}
+        />
+        <polygon
+          points={`${8 * CELL},${8 * CELL} ${7 * CELL},${8 * CELL} ${7.5 * CELL},${7.5 * CELL}`}
+          fill={COLOR_HEX.blue}
+        />
+        <polygon
+          points={`${7 * CELL},${8 * CELL} ${7 * CELL},${7 * CELL} ${7.5 * CELL},${7.5 * CELL}`}
+          fill={COLOR_HEX.red}
+        />
+        <rect x={7 * CELL} y={7 * CELL} width={CELL} height={CELL} fill="none" stroke="#0D0F0E" strokeWidth={2} />
+        <circle cx={7.5 * CELL} cy={7.5 * CELL} r={CELL * 0.34} fill="url(#center-glow)" />
+        <circle cx={7.5 * CELL} cy={7.5 * CELL} r={CELL * 0.16} fill="#0D0F0E" stroke="#F2F4EC" strokeWidth={1.5} />
+        <text x={7.5 * CELL} y={7.5 * CELL + 5} textAnchor="middle" fontSize={13}>
+          🏁
+        </text>
       </g>
 
       {/* Pieces — a running counter (not the piece's absolute index) assigns hotkeys 1-4,
@@ -147,6 +203,7 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
           const { x, y } = toXY(cell);
           const isCurrentTurnColor = currentColor === player.color;
           const justMoved = lastMoveInfo?.pieceId === piece.id;
+          const justCaptured = justMoved && (lastMoveInfo?.captured?.length ?? 0) > 0;
 
           const group = cellGroups.get(`${cell[0]},${cell[1]}`) ?? [];
           const isStacked = group.length > 1;
@@ -155,9 +212,8 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
           const hotkey = isSelectable ? ++hotkeyCounter : null;
 
           return (
-            <g
+            <motion.g
               key={piece.id}
-              transform={`translate(${x + ox}, ${y + oy})`}
               onClick={() => isSelectable && onSelectPiece(piece.id)}
               onKeyDown={(e) => {
                 if (isSelectable && (e.key === "Enter" || e.key === " ")) {
@@ -169,17 +225,30 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
               className={isSelectable ? "cursor-pointer focus-visible:outline-none" : ""}
               role={isSelectable ? "button" : undefined}
               aria-label={isSelectable ? `Move ${player.color} piece (press ${hotkey})` : undefined}
+              initial={false}
+              animate={{ x: x + ox, y: y + oy }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
             >
-              {isSelectable && <circle r={14} fill="none" stroke="#B8F34A" strokeWidth={2.5} className="animate-pulse" />}
-              {isStacked && group.length > 2 && posInGroup === 0 && (
-                <circle r={16} fill="none" stroke="#F2F4EC" strokeOpacity={0.25} strokeWidth={1} strokeDasharray="2 2" />
+              {isSelectable && (
+                <motion.circle
+                  r={15}
+                  fill="none"
+                  stroke="#B8F34A"
+                  strokeWidth={2.5}
+                  animate={{ opacity: [0.35, 1, 0.35] }}
+                  transition={{ duration: 1.1, repeat: Infinity }}
+                />
               )}
-              <circle
-                r={10}
-                fill={COLOR_HEX[player.color]}
+              {isStacked && group.length > 2 && posInGroup === 0 && (
+                <circle r={17} fill="none" stroke="#F2F4EC" strokeOpacity={0.25} strokeWidth={1} strokeDasharray="2 2" />
+              )}
+              <motion.circle
+                r={11}
+                fill={`url(#piece-${player.color})`}
                 stroke={isCurrentTurnColor ? "#F2F4EC" : "#0D0F0E"}
                 strokeWidth={isCurrentTurnColor ? 2 : 1.5}
-                className={justMoved ? "animate-piece-move" : ""}
+                animate={justCaptured ? { scale: [1, 1.5, 1] } : justMoved ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+                transition={{ duration: 0.32, ease: "easeOut" }}
               />
               {piece.steps === 58 && (
                 <text textAnchor="middle" y={4} fontSize={10} fill="#0D0F0E" fontWeight="bold">
@@ -194,7 +263,7 @@ export function Board({ players, currentColor, selectablePieceIds, onSelectPiece
                   </text>
                 </>
               )}
-            </g>
+            </motion.g>
           );
         });
       })}

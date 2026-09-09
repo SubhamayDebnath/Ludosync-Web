@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 
-const MIN_GAMES_THRESHOLD = 3;
+// A registered player appears on the leaderboard as soon as they've finished a single game.
+const MIN_GAMES_THRESHOLD = 1;
 
 export async function GET() {
   const db = await getDb();

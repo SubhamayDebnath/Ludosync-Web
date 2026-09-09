@@ -1,3 +1,5 @@
+import { randomGuestName } from "./randomName";
+
 const TOKEN_PREFIX = "ludo:playerToken:";
 const SOUND_KEY = "ludo:soundEnabled";
 
@@ -34,14 +36,18 @@ export function setSoundPreference(enabled: boolean) {
   }
 }
 
+/** Returns the guest's remembered display name, assigning and persisting a fun random
+ * one (e.g. "Sizzling Cobra 42") the very first time — so nobody ever has to pick a name. */
 export function getOrCreateDisplayName(): string {
   try {
     const existing = localStorage.getItem("ludo:displayName");
     if (existing) return existing;
+    const generated = randomGuestName();
+    localStorage.setItem("ludo:displayName", generated);
+    return generated;
   } catch {
-    // ignore
+    return randomGuestName();
   }
-  return "";
 }
 
 export function saveDisplayName(name: string) {

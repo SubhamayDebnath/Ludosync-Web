@@ -32,3 +32,8 @@ export const forgotPasswordSchema = z.object({
   recoveryCode: recoveryCodeSchema,
   newPassword: passwordSchema,
 });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: passwordSchema,
+});

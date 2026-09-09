@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 const PIP_LAYOUT: Record<number, [number, number][]> = {
@@ -59,7 +60,7 @@ export function Dice({
   // on one render doesn't read as a spin, it just reads as "wrong number".
   useEffect(() => {
     if (rolling) {
-      spinTimer.current = setInterval(() => setSpinFace(1 + Math.floor(Math.random() * 6)), 80);
+      spinTimer.current = setInterval(() => setSpinFace(1 + Math.floor(Math.random() * 6)), 70);
     } else if (spinTimer.current) {
       clearInterval(spinTimer.current);
       spinTimer.current = null;
@@ -73,18 +74,24 @@ export function Dice({
 
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <button
+      <motion.button
         type="button"
         onClick={onRoll}
         disabled={disabled || rolling}
         aria-label={disabled ? "Not your turn" : rolling ? "Rolling…" : "Roll dice (space bar works too)"}
         aria-live="polite"
-        className={`grid h-16 w-16 grid-cols-3 grid-rows-3 gap-1 rounded-xl border-2 p-2 transition-all ${
-          rolling ? "animate-dice-roll" : ""
-        } ${
+        whileHover={disabled ? undefined : { scale: 1.06 }}
+        whileTap={disabled ? undefined : { scale: 0.92 }}
+        animate={
+          rolling
+            ? { rotate: [0, -12, 14, -8, 6, 0], scale: [1, 1.12, 0.96, 1.08, 1] }
+            : { rotate: 0, scale: 1 }
+        }
+        transition={rolling ? { duration: 0.5, ease: "easeInOut" } : { type: "spring", stiffness: 400, damping: 18 }}
+        className={`grid h-16 w-16 grid-cols-3 grid-rows-3 gap-1 rounded-2xl border-2 p-2 ${
           disabled
             ? "border-surface2 bg-surface cursor-not-allowed opacity-40"
-            : "border-primary bg-surface2 shadow-[0_0_16px_-4px_rgba(184,243,74,0.5)] hover:scale-105 active:scale-95 cursor-pointer"
+            : "border-primary bg-gradient-to-br from-surface2 to-surface3 shadow-[0_0_20px_-4px_rgba(184,243,74,0.65)] cursor-pointer"
         }`}
       >
         {Array.from({ length: 9 }).map((_, i) => {
@@ -95,13 +102,13 @@ export function Dice({
             <span
               key={i}
               className={`rounded-full transition-colors ${
-                active ? (disabled ? "bg-muted" : "bg-primary") : "bg-transparent"
+                active ? (disabled ? "bg-muted" : "bg-primary shadow-[0_0_6px_rgba(184,243,74,0.9)]") : "bg-transparent"
               }`}
               style={{ width: "100%", height: "100%" }}
             />
           );
         })}
-      </button>
+      </motion.button>
       <span className="text-[10px] text-muted tracking-wide h-3">
         {rolling ? "Rolling…" : !disabled ? "SPACE to roll" : ""}
       </span>
